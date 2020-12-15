@@ -257,9 +257,3 @@ RUN /opt/conda/bin/python -m bash_kernel.install
 # install h2o
 RUN /opt/conda/bin/pip install --no-cache-dir --upgrade h2o && \
     /opt/conda/bin/pip install --no-cache-dir --upgrade pandas
-
-
-## disable authentication
-#RUN mkdir -p .jupyter
-#RUN echo "" >> ~/.jupyter/jupyter_notebook_config.py
-#RUN echo "c.NotebookApp.token = ''" >> ~/.jupyter/jupyter_notebook_config.py

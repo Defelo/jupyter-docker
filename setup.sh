@@ -1,4 +1,4 @@
 #!/bin/bash
 
-mkdir data work
-sudo docker-compose run --rm -v $PWD/data:/home/jovyan/.jupyter jupyter jupyter notebook password
+mkdir -p data/{work,jupyter}
+sudo docker-compose run --rm -v $PWD/data/jupyter:/home/jovyan/.jupyter jupyter jupyter notebook password

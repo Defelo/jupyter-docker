@@ -6,11 +6,11 @@ services:
       restart: always
       build: .
       volumes:
-        - ./work:/home/jovyan/work
-        - ./data:/home/jovyan/.jupyter
+        - ./data/work:/home/jovyan/work
+        - ./data/jupyter:/home/jovyan/.jupyter
       environment:
         JUPYTER_ENABLE_LAB: "yes"
-        # VIRTUAL_HOST: jupyter.examle.org:8888
+        # VIRTUAL_HOST: jupyter.example.org:8888
 
 networks:
   default:
