@@ -1,27 +1,39 @@
 FROM jupyter/tensorflow-notebook
 
 USER root
-# install dependencies 
-RUN apt-get update && apt-get install -yq --no-install-recommends \
-    php-cli php-dev php-pear \
-    pkg-config \
-    && apt-get clean
-#    rm -rf /var/lib/apt/lists/*
+
+# update system and install dependencies
+RUN set -x \
+    && apt update \
+    && apt dist-upgrade -y \
+    && apt install -y pkg-config
+
+# install python2 kernel
+RUN set -x \
+    && cd /tmp \
+    && wget https://bootstrap.pypa.io/get-pip.py \
+    && python2 get-pip.py \
+    && python2 -m pip install --upgrade ipykernel \
+    && python2 -m ipykernel install
 
 
+# install c++ kernel
 RUN conda install -y -c conda-forge bash jupyter jupyter_contrib_nbextensions
 RUN conda install -y -c conda-forge xeus-cling xtensor
 
-# install ijavascript
-RUN set -x && apt-get install -yq --no-install-recommends nodejs npm libzmq3-dev && \
-    npm install -g --unsafe-perm ijavascript && \
-    ijsinstall --install=global
 
-RUN chown -R $NB_USER /home/$NB_USER && \
-    rm -rf /home/$NB_USER/.local/share/jupyter
+# install javascript kernel
+RUN set -x \
+    && apt install -y nodejs npm libzmq3-dev \
+    && npm install -g --unsafe-perm ijavascript \
+    && ijsinstall --install=global
+
+RUN set -x \
+    && chown -R $NB_USER /home/$NB_USER \
+    && rm -rf /home/$NB_USER/.local/share/jupyter
 
 # install java jre for h2o
-RUN apt-get install -yq openjdk-8-jre
+RUN apt install -y openjdk-8-jre
 
 
 ################################### Haskell ###################################
@@ -32,41 +44,45 @@ RUN mkdir -p $STACK_ROOT
 RUN fix-permissions $STACK_ROOT
 
 # Install system dependencies
-RUN apt-get update && apt-get install -yq --no-install-recommends \
-        python3-pip \
-        git \
-        libtinfo-dev \
-        libzmq3-dev \
-        libcairo2-dev \
-        libpango1.0-dev \
-        libmagic-dev \
-        libblas-dev \
-        liblapack-dev \
-        libffi-dev \
-        libgmp-dev \
-        gnupg \
-        netbase \
+RUN apt install -y \
+    python3-pip \
+    git \
+    libtinfo-dev \
+    libzmq3-dev \
+    libcairo2-dev \
+    libpango1.0-dev \
+    libmagic-dev \
+    libblas-dev \
+    liblapack-dev \
+    libffi-dev \
+    libgmp-dev \
+    gnupg \
+    netbase \
 # for ihaskell-graphviz
-        graphviz \
+    graphviz \
 # for Stack download
-        curl \
+    curl \
 # Stack Debian/Ubuntu manual install dependencies
 # https://docs.haskellstack.org/en/stable/install_and_upgrade/#linux-generic
-        g++ \
-        gcc \
-        libc6-dev \
-        libffi-dev \
-        libgmp-dev \
-        make \
-        xz-utils \
-        zlib1g-dev \
-        git \
-        gnupg \
-        netbase \
+    g++ \
+    gcc \
+    libc6-dev \
+    libffi-dev \
+    libgmp-dev \
+    make \
+    xz-utils \
+    zlib1g-dev \
+    git \
+    gnupg \
+    netbase \
 # Need less for general maintenance
-        less && \
-# Clean up apt
-    rm -rf /var/lib/apt/lists/*
+    less
+
+
+RUN set -x \
+    && apt clean \
+    && rm -rf /var/lib/apt/lists/*
+
 
 # Stack Linux (generic) Manual download
 # https://docs.haskellstack.org/en/stable/install_and_upgrade/#linux-generic
@@ -78,7 +94,8 @@ RUN apt-get update && apt-get install -yq --no-install-recommends \
 #
 ARG STACK_VERSION="2.5.1"
 ARG STACK_BINDIST="stack-${STACK_VERSION}-linux-x86_64"
-RUN    cd /tmp \
+RUN set -x \
+    && cd /tmp \
     && curl -sSL --output ${STACK_BINDIST}.tar.gz https://github.com/commercialhaskell/stack/releases/download/v${STACK_VERSION}/${STACK_BINDIST}.tar.gz \
     && tar zxf ${STACK_BINDIST}.tar.gz \
     && cp ${STACK_BINDIST}/stack /usr/bin/stack \
@@ -95,14 +112,16 @@ RUN fix-permissions /etc/stack
 # https://docs.haskellstack.org/en/stable/yaml_configuration/#yaml-configuration
 RUN mkdir -p $STACK_ROOT/global-project
 COPY global-project.stack.yaml $STACK_ROOT/global-project/stack.yaml
-RUN    chown --recursive $NB_UID:users $STACK_ROOT/global-project \
+RUN set -x \
+    && chown --recursive $NB_UID:users $STACK_ROOT/global-project \
     && fix-permissions $STACK_ROOT/global-project
 
 # fix-permissions for /usr/local/share/jupyter so that we can install
 # the IHaskell kernel there. Seems like the best place to install it, see
 #      jupyter --paths
 #      jupyter kernelspec list
-RUN    mkdir -p /usr/local/share/jupyter \
+RUN set -x \
+    && mkdir -p /usr/local/share/jupyter \
     && fix-permissions /usr/local/share/jupyter \
     && mkdir -p /usr/local/share/jupyter/kernels \
     && fix-permissions /usr/local/share/jupyter/kernels
@@ -110,7 +129,8 @@ RUN    mkdir -p /usr/local/share/jupyter \
 # Now make a bin directory for installing the ihaskell executable on
 # the PATH. This /opt/bin is referenced by the stack non-project-specific
 # config.
-RUN    mkdir -p /opt/bin \
+RUN set -x \
+    && mkdir -p /opt/bin \
     && fix-permissions /opt/bin
 ENV PATH ${PATH}:/opt/bin
 
@@ -126,7 +146,8 @@ ARG IHASKELL_COMMIT=5b7e03b2caad17a51cb7490d66bf808e0e8b9d4a
 ARG HVEGA_COMMIT=77168ddd15a50a6db6d44f76232eebe7c2b507b7
 
 # Clone IHaskell and install ghc from the IHaskell resolver
-RUN    cd /opt \
+RUN set -x \
+    && cd /opt \
     && curl -L "https://github.com/gibiansky/IHaskell/tarball/$IHASKELL_COMMIT" | tar xzf - \
     && mv *IHaskell* IHaskell \
     && curl -L "https://github.com/DougBurke/hvega/tarball/$HVEGA_COMMIT" | tar xzf - \
@@ -151,15 +172,18 @@ RUN    cd /opt \
 # https://success.docker.com/article/docker-hub-automated-build-fails-and-the-logs-are-missing-empty
 #
 # Build ghc-parser
-RUN    stack --jobs 1 build $STACK_ARGS ghc-parser \
+RUN set -x \
+    && stack --jobs 1 build $STACK_ARGS ghc-parser \
     && fix-permissions /opt/IHaskell \
     && fix-permissions $STACK_ROOT
 # Build ipython-kernel
-RUN    stack --jobs 1 build $STACK_ARGS ipython-kernel \
+RUN set -x \
+    && stack --jobs 1 build $STACK_ARGS ipython-kernel \
     && fix-permissions /opt/IHaskell \
     && fix-permissions $STACK_ROOT
 # Build IHaskell
-RUN    stack --jobs 1 build $STACK_ARGS ihaskell \
+RUN set -x \
+    && stack --jobs 1 build $STACK_ARGS ihaskell \
 # Note that we are NOT in the /opt/IHaskell directory here, we are
 # installing ihaskell via the paths given in /opt/stack/global-project/stack.yaml
     && fix-permissions /opt/IHaskell \
@@ -167,7 +191,8 @@ RUN    stack --jobs 1 build $STACK_ARGS ihaskell \
 
 # Install IHaskell.Display libraries
 # https://github.com/gibiansky/IHaskell/tree/master/ihaskell-display
-RUN    stack build $STACK_ARGS ihaskell-aeson \
+RUN set -x \
+    && stack build $STACK_ARGS ihaskell-aeson \
     && stack build $STACK_ARGS ihaskell-blaze \
     && stack build $STACK_ARGS ihaskell-charts \
     && stack build $STACK_ARGS ihaskell-diagrams \
@@ -196,7 +221,8 @@ RUN    stack build $STACK_ARGS ihaskell-aeson \
 # We can't actually figure out anything to cleanup.
 
 # Bug workaround for https://github.com/jamesdbrock/ihaskell-notebook/issues/9
-RUN mkdir -p /home/jovyan/.local/share/jupyter/runtime \
+RUN set -x \
+    && mkdir -p /home/jovyan/.local/share/jupyter/runtime \
     && fix-permissions /home/jovyan/.local \
     && fix-permissions /home/jovyan/.local/share \
     && fix-permissions /home/jovyan/.local/share/jupyter \
@@ -204,57 +230,36 @@ RUN mkdir -p /home/jovyan/.local/share/jupyter/runtime \
 
 # Install system-level ghc using the ghc which was installed by stack
 # using the IHaskell resolver.
-RUN mkdir -p /opt/ghc && ln -s `stack path --compiler-bin` /opt/ghc/bin \
+RUN set -x \
+    && mkdir -p /opt/ghc && ln -s `stack path --compiler-bin` /opt/ghc/bin \
     && fix-permissions /opt/ghc
 ENV PATH ${PATH}:/opt/ghc/bin
-
-
-
 
 
 # Reset user from jupyter/base-notebook
 USER $NB_USER
 
 
-
-RUN \
+RUN set -x \
 # Install the IHaskell kernel at /usr/local/share/jupyter/kernels, which is
 # in `jupyter --paths` data:
-       stack exec ihaskell -- install --stack --prefix=/usr/local \
+    && stack exec ihaskell -- install --stack --prefix=/usr/local \
 # Add the --codemirror Haskell switch to enable syntax highlighting
     && sed --in-place s/"\+RTS"/--codemirror\",\"Haskell\",\"+RTS/ /usr/local/share/jupyter/kernels/haskell/kernel.json
 # " This line is just to close the double-quote for syntax highlighting in the Dockerfile
 
 
-
-
-
-
-
-
-# install jupyter-bash
+# install bash kernel
 RUN /opt/conda/bin/pip install --no-cache-dir bash_kernel
 RUN /opt/conda/bin/python -m bash_kernel.install
+
 
 # install h2o
 RUN /opt/conda/bin/pip install --no-cache-dir --upgrade h2o && \
     /opt/conda/bin/pip install --no-cache-dir --upgrade pandas
 
 
-# install python2 kernel
-USER root
-
-RUN set -x \
-    && cd /tmp \
-    && wget https://bootstrap.pypa.io/get-pip.py \
-    && python2 get-pip.py \
-    && python2 -m pip install --upgrade ipykernel \
-    && python2 -m ipykernel install
-
-USER $NB_USER
-
-
-# disable authentication
-RUN mkdir -p .jupyter
-RUN echo "" >> ~/.jupyter/jupyter_notebook_config.py
-RUN echo "c.NotebookApp.token = ''" >> ~/.jupyter/jupyter_notebook_config.py
+## disable authentication
+#RUN mkdir -p .jupyter
+#RUN echo "" >> ~/.jupyter/jupyter_notebook_config.py
+#RUN echo "c.NotebookApp.token = ''" >> ~/.jupyter/jupyter_notebook_config.py
