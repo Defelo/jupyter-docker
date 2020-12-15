@@ -1,0 +1,18 @@
+version: '3.7'
+
+services:
+  jupyter:
+      image: defelo/jupyter
+      restart: always
+      build: .
+      volumes:
+        - ./work:/home/jovyan/work
+        - ./data:/home/jovyan/.jupyter
+      environment:
+        JUPYTER_ENABLE_LAB: "yes"
+        # VIRTUAL_HOST: jupyter.examle.org:8888
+
+networks:
+  default:
+    external:
+      name: nginx
