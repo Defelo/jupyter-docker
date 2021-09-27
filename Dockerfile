@@ -11,7 +11,7 @@ RUN set -x \
 # install python2 kernel
 RUN set -x \
     && cd /tmp \
-    && wget https://bootstrap.pypa.io/get-pip.py \
+    && wget https://bootstrap.pypa.io/pip/2.7/get-pip.py \
     && python2 get-pip.py \
     && python2 -m pip install --upgrade ipykernel \
     && python2 -m ipykernel install
