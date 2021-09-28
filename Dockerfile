@@ -257,3 +257,5 @@ RUN /opt/conda/bin/python -m bash_kernel.install
 # install h2o
 RUN /opt/conda/bin/pip install --no-cache-dir --upgrade h2o && \
     /opt/conda/bin/pip install --no-cache-dir --upgrade pandas
+
+ENV JUPYTER_ENABLE_LAB=yes
